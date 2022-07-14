@@ -1,0 +1,25 @@
+node {
+    properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')), pipelineTriggers([pollSCM('* * * * *')])])
+    stage ('Checkout code'){
+        git credentialsId: '20cb88d1-2a61-4adc-aead-c748a7a92fd7', url: 'https://github.com/sambasivareddyp/maven-web-application.git'
+    }
+    stage ('build'){
+        sh "mvn clean package"
+    }
+    stage ('ExecuteSonarQubeReport')
+    {
+        sh "mvn sonar:sonar"
+    }
+    stage ('DeployAppintoTomcatServer'){
+        sshagent(['72e95a7b-5d77-4b57-98bc-2b0ded2a513f']) {
+            sh "scp -o  StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.233.200.7:/opt/tomcat/webapps/ "
+}
+    }
+    stage ('SendEmailnotification'){
+        emailext body: '''Build is over
+
+Regards
+samba
+9160981462''', subject: 'Build is over', to: 'samba45042@gmail.com'
+    }
+}
